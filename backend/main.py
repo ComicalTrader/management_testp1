@@ -1,8 +1,17 @@
 from fastapi import FastAPI
 from .database import Base,engine
 from .routers import appointment
+from .routers import customers
+from .routers import finance
+
+
 Base.metadata.create_all(bind= engine)
 app = FastAPI(title="management API")
+
+app.include_router(appointment.router)
+app.include_router(customers.router)
+app.include_router(finance.router)
+
 
 
 
