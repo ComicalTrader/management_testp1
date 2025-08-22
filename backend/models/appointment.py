@@ -11,5 +11,7 @@ class Appointment(Base):
     phone = Column(String)
     start_at = Column(DateTime, index = True)
     notes = Column(String)
+    service = Column(String)
+
 
 
