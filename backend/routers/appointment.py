@@ -5,7 +5,7 @@ from ..models.appointment import Appointment
 from ..schemas.appointment import AppointmentCreate,AppointmentOut
 
 
-router = APIRouter(Prefix = "/appointments", tags = ["appointments"])
+router = APIRouter(prefix = "/appointments", tags = ["appointments"])
 def get_db():
     db = SessionLocal()
     try: yield db
