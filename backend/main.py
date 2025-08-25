@@ -17,8 +17,8 @@ app.include_router(finance.router)
 
 @app.get("/")
 @app.get("/h")
-def health(): 
-    return{"status": "good"}
+async def health(): 
+    return{"message": "Hello World"}
 
 
 @app.get("/appointment")
