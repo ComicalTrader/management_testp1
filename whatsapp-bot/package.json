@@ -1,0 +1,19 @@
+{
+  "name": "whatsapp-bot",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon --watch . --ext js --exec node index.js",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^",
+    "axios": "^",
+    "dotenv": "^",
+    "pino": "^"
+  },
+  "devDependencies": {
+    "nodemon": "^"
+  }
+}

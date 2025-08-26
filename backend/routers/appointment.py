@@ -15,7 +15,7 @@ def get_db():
 
 
 
-@router.post("/",response_model=AppointmentOut)
+@router.post("/",response_model=AppointmentOut,tags=["Appointments"], summary="Criar novo agendamento", description="Cria um novo agendamento no sistema de barbearia.")
 def create(ap:AppointmentCreate, db: Session = Depends(get_db)):
     obj = Appointment(**ap.model_dump())
     db.add(obj); db.commit(); db.refresh(obj); return obj
