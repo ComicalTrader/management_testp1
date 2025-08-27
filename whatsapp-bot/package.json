@@ -8,12 +8,12 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "^",
-    "axios": "^",
-    "dotenv": "^",
-    "pino": "^"
+    "@whiskeysockets/baileys": "^6.7.9",
+    "axios": "1.11.0",
+    "dotenv": "16.4.5",
+    "pino": "9.3.2"
   },
   "devDependencies": {
-    "nodemon": "^"
+    "nodemon": "3.1.4"
   }
 }

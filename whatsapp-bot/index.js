@@ -1,42 +1,49 @@
-import { default: makeWASocket, useSingleFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
-import { Boom } from '@hapi/boom';
-import fs from 'fs';
+import pkg from '@whiskeysockets/baileys';
+import Pino from 'pino';
 
-const { state, saveState } = useSingleFileAuthState('./auth_info.json');
+const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, DisconnectReason } = pkg;
 
 async function startBot() {
-    const { version } = await fetchLatestBaileysVersion();
-    const sock = makeWASocket({
-        version,
-        auth: state,
-    });
+  console.log('⏳ Inicializando Baileys...');
+  const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
+  console.log('🆗 AuthState carregado.');
 
-    sock.ev.on('creds.update', saveState);
+  const { version } = await fetchLatestBaileysVersion();
+  console.log(`Versão Baileys: ${version}`);
 
-    // Reconexão automática
-    sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect } = update;
-        if(connection === 'close') {
-            const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
-            if(reason !== DisconnectReason.loggedOut) {
-                startBot(); // reconectar se não deslogado
-            }
-        } else if(connection === 'open') {
-            console.log('Conectado ao WhatsApp!');
-        }
-    });
+  const sock = makeWASocket({
+    version,
+    logger: Pino({ level: 'silent' }),
+    printQRInTerminal: true,
+    auth: state
+  });
 
-    // Enviar mensagem
-    const sendMessage = async (jid, message) => {
-        await sock.sendMessage(jid, { text: message });
-        console.log(`Mensagem enviada para ${jid}: ${message}`);
-    };
+  sock.ev.on('creds.update', saveCreds);
 
-    // Exemplo: substituir pelo número real do destinatário com o sufixo @s.whatsapp.net
-    // Ex: '5591999999999@s.whatsapp.net'
-    const numero = '5591999999999@s.whatsapp.net';
-    await sendMessage(numero, 'Olá! Teste do bot Baileys');
+  sock.ev.on('connection.update', (update) => {
+    console.log('⤵ Update de conexão:', update.connection);
+    if (update.connection === 'open') {
+      console.log('✅ Conectado com sucesso! :)');
+      // Enviando uma mensagem de teste opcional:
+      sock.sendMessage('559999999999@s.whatsapp.net', { text: 'Bot conectado!' })
+        .catch(console.error);
+    }
+    if (update.connection === 'close') {
+      console.log('⚠️ Conexão fechada, tentando reconectar...');
+      startBot();
+    }
+  });
 
+  sock.ev.on('messages.upsert', ({ messages }) => {
+    const msg = messages[0];
+    const from = msg.key.remoteJid;
+    const text = msg.message?.conversation || '';
+    console.log(`📩 [${from}] → ${text}`);
+    if (text.toLowerCase() === 'ping') {
+      sock.sendMessage(from, { text: 'pong 🏓' })
+        .catch(console.error);
+    }
+  });
 }
 
 startBot();
