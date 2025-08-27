@@ -1,49 +1,56 @@
-import pkg from '@whiskeysockets/baileys';
+// index.js
+import * as baileys from '@whiskeysockets/baileys'
 import Pino from 'pino';
+import qrcode from 'qrcode-terminal';
+import dotenv from 'dotenv';
 
-const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, DisconnectReason } = pkg;
+dotenv.config()
 
 async function startBot() {
-  console.log('⏳ Inicializando Baileys...');
-  const { state, saveCreds } = await useMultiFileAuthState('./auth_info');
-  console.log('🆗 AuthState carregado.');
+    console.log('Inicializando Baileys...');
 
-  const { version } = await fetchLatestBaileysVersion();
-  console.log(`Versão Baileys: ${version}`);
+    // Carrega ou cria auth state na pasta auth_info
+    const { state, saveCreds } = await baileys.useMultiFileAuthState('./auth_info');
 
-  const sock = makeWASocket({
-    version,
-    logger: Pino({ level: 'silent' }),
-    printQRInTerminal: true,
-    auth: state
-  });
+    // Busca versão atual do WhatsApp Web
+    const { version } = await baileys.fetchLatestBaileysVersion();
 
-  sock.ev.on('creds.update', saveCreds);
+    // Cria socket
+    const sock = baileys.makeWASocket({
+        version,
+        auth: state,
+        logger: Pino({ level: 'silent' }),
+    });
 
-  sock.ev.on('connection.update', (update) => {
-    console.log('⤵ Update de conexão:', update.connection);
-    if (update.connection === 'open') {
-      console.log('✅ Conectado com sucesso! :)');
-      // Enviando uma mensagem de teste opcional:
-      sock.sendMessage('559999999999@s.whatsapp.net', { text: 'Bot conectado!' })
-        .catch(console.error);
-    }
-    if (update.connection === 'close') {
-      console.log('⚠️ Conexão fechada, tentando reconectar...');
-      startBot();
-    }
-  });
+    // Eventos de conexão
+    sock.ev.on('connection.update', (update) => {
+        const { connection, lastDisconnect, qr } = update;
 
-  sock.ev.on('messages.upsert', ({ messages }) => {
-    const msg = messages[0];
-    const from = msg.key.remoteJid;
-    const text = msg.message?.conversation || '';
-    console.log(`📩 [${from}] → ${text}`);
-    if (text.toLowerCase() === 'ping') {
-      sock.sendMessage(from, { text: 'pong 🏓' })
-        .catch(console.error);
-    }
-  });
+        if (qr) {
+            console.log('QR Code gerado! Escaneie com o WhatsApp:');
+            qrcode.generate(qr, { small: true });
+        }
+
+        console.log('Status de conexão:', connection);
+
+        if (connection === 'close') {
+            const reason = lastDisconnect?.error?.output?.statusCode;
+            console.log('Desconectado, motivo:', reason);
+            startBot(); // reconectar automaticamente
+        }
+
+        if (connection === 'open') {
+            console.log('✅ Conectado com sucesso!');
+        }
+    });
+
+    // Evento de recebimento de mensagens
+    sock.ev.on('messages.upsert', (m) => {
+        console.log('Mensagem recebida:', JSON.stringify(m, null, 2));
+    });
+
+    // Atualização de credenciais
+    sock.ev.on('creds.update', saveCreds);
 }
 
 startBot();
